@@ -1,0 +1,175 @@
+# 05-reproducible-research-assignment-2
+05-reproducible-research-assignment-2
+---
+title: "Assessing Health and Economic Impact of Weather Events"
+author: "Suriyaprakasam Ramalingam"
+date: "February 10, 2018"
+output: html_document
+keep_md: true
+---
+
+## Synopsis
+This study is to analyze the data by  U.S. National Oceanic and Atmospheric Administration's
+(NOAA) storm database.The data contains type of Storm event with details like location, date, human fatalitties, injuries, damages to the property and Crop and economic impact.
+
+The conclusion is that most human damages (fatalitties and Injuries) cause and most econmic damage(property and Crop) are caused different events. They are not co-related. Tornado is the major cause for fatalities and Injuries.Excessive Heat is the second highiest caise for fatalitties.TSTM Wind is teh second highiest cause for injuries. Flood is the major cause for property damages. Interstingly Drought is the major cause for Crop damage.
+
+## Questions this study considers
+
+  1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+  1. Across the United States, which types of events have the greatest economic consequences?
+
+## Notes about the environment used
+This study was done using the following tools, including OS and Programming language versions
+
+The study was conducted on a 64-bit Windows 10 machine with 4 cores.
+
+R language was `r R.version.string`
+
+For publishing to `rpubs.com`, I used RStudio version 1.0.143
+
+The full project may be found on Github at `https://github.com/Suri75/05-reproducible-research-assignment-2`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+## Data Processing
+Set libraries used in this analysis
+```{r loadLibraries, warning=FALSE, results="hide", message=FALSE}
+library(stringr)
+library(ggplot2)
+
+```
+
+## Loading and preprocessing the data
+
+1. Load the data (i.e. read.csv())
+2. Process/transform the data (if necessary) into a format suitable for your analysis
+
+```{r}
+# set the Working Directory
+setwd('G:/Training/Coursera/Data Science/Reproducible Research/Week 4/')
+##Download the data file for the first time
+  if(!file.exists("/stormData.csv.bz2")){
+      download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile="./stormData.csv.bz2")
+  }
+  ##Extract the file once
+  if(!file.exists("stormdata.csv"))
+  {
+    bunzip2("stormData.csv.bz2","stormdata.csv",remove=F)
+  }
+
+  ##load the data
+  storm <- read.csv("stormdata.csv",header=TRUE,sep=",")
+  head(storm)
+
+```
+
+## Cleaning the data
+As we have to examine maximum cause for property and crop damages.
+These fields (`PROPDMG`) and (`CROPDMG`). These values are given as integers multiplied by exponential values.
+not all of the exponent
+values are valid; many appear to be rounding or entry errors from
+older entry systems.This analysis treats invalid enries as 0 for the calculations.
+
+
+
+## Results
+
+### Question 1: Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+With respect to the Population Health, there are two damages caused : fatalities and injuries. The top 10 severity of the harmful events are analysed and plotted below.
+
+## Fatalities
+Aggregate the fatalities by the event type and sort the output in descending order
+```{r fatal}
+fatal <- aggregate(FATALITIES~EVTYPE,data=storm,FUN=sum,na.rm=TRUE)
+fatal <- fatal[with(fatal,order(-FATALITIES)),]
+fatal <- head(fatal,10)
+print(fatal)
+```
+
+## Injuries
+Aggregate the injuries by the event type and sort the output in descending order
+```{r Injury}
+injury <- aggregate(INJURIES~EVTYPE,data=storm,FUN=sum,na.rm=TRUE)
+injury <- injury[with(injury,order(-INJURIES)),]
+injury <- head(injury,10)
+print(injury)
+```
+## Graph to display top 10 Harmful events for fatalitties and injuries
+
+```{r Graph_1}
+par(mfrow=c(1,2),mar=c(5,3,3,2))
+barplot(fatal$FATALITIES,names.arg=fatal$EVTYPE,las=2,col="Grey",ylab="fatalities",main="Harmful Events Vs Fatalities")
+barplot(injury$INJURIES,names.arg=injury$EVTYPE,las=2,col="grey",ylab="injuries",main="Harmful Events Vs Injuries")
+```
+
+## Harmful Events causing greatest economic consequences
+There are two dypes of damages which causes economic consequences.Property damage and Crop damage.
+
+On exploring the column names of the data, we find that the property damage(PROPDMG) and crop damage(CROPDMG) columns has another column(exponents) related to it, i.e PROPDMGEXP and CROPDMGEXP respectively. So, for the calculation of the total property and crop damages caused, we need to convert the exponent columns into numeric data.
+
+```{r Economic_damage}
+storm$PROPDMG[storm$PROPDMGEXP == "K"] <- storm$PROPDMG[storm$PROPDMGEXP == "K"] * 1000
+storm$PROPDMG[storm$PROPDMGEXP == "M"] <- storm$PROPDMG[storm$PROPDMGEXP == "M"] * (10^6)
+storm$PROPDMG[storm$PROPDMGEXP == "H"] <- storm$PROPDMG[storm$PROPDMGEXP == "H"] * 100
+storm$PROPDMG[storm$PROPDMGEXP == "h"] <- storm$PROPDMG[storm$PROPDMGEXP == "h"] * 100
+storm$PROPDMG[storm$PROPDMGEXP == ""] <- storm$PROPDMG[storm$PROPDMGEXP == ""] * 1
+storm$PROPDMG[storm$PROPDMGEXP == "B"] <- storm$PROPDMG[storm$PROPDMGEXP == "B"] * (10^9)
+storm$PROPDMG[storm$PROPDMGEXP == "m"] <- storm$PROPDMG[storm$PROPDMGEXP == "m"] * (10^6)
+storm$PROPDMG[storm$PROPDMGEXP == "0"] <- storm$PROPDMG[storm$PROPDMGEXP == "0"] * 1
+storm$PROPDMG[storm$PROPDMGEXP == "1"] <- storm$PROPDMG[storm$PROPDMGEXP == "1"] * 10
+storm$PROPDMG[storm$PROPDMGEXP == "2"] <- storm$PROPDMG[storm$PROPDMGEXP == "2"] * 100
+storm$PROPDMG[storm$PROPDMGEXP == "3"] <- storm$PROPDMG[storm$PROPDMGEXP == "3"] * 1000
+storm$PROPDMG[storm$PROPDMGEXP == "4"] <- storm$PROPDMG[storm$PROPDMGEXP == "4"] * (10^4)
+storm$PROPDMG[storm$PROPDMGEXP == "5"] <- storm$PROPDMG[storm$PROPDMGEXP == "5"] * (10^5)
+storm$PROPDMG[storm$PROPDMGEXP == "6"] <- storm$PROPDMG[storm$PROPDMGEXP == "6"] * (10^6)
+storm$PROPDMG[storm$PROPDMGEXP == "7"] <- storm$PROPDMG[storm$PROPDMGEXP == "7"] * (10^7)
+storm$PROPDMG[storm$PROPDMGEXP == "8"] <- storm$PROPDMG[storm$PROPDMGEXP == "8"] * (10^8)
+storm$PROPDMG[storm$PROPDMGEXP == "+"] <- 0
+storm$PROPDMG[storm$PROPDMGEXP == "-"] <- 0
+storm$PROPDMG[storm$PROPDMGEXP == "?"] <- 0
+head(storm[,c("EVTYPE","PROPDMG","PROPDMGEXP")])
+
+unique(storm$CROPDMGEXP)
+
+storm$CROPDMG[storm$CROPDMGEXP == "M"] <- storm$CROPDMG[storm$CROPDMGEXP == "M"] * (10^6)
+storm$CROPDMG[storm$CROPDMGEXP == "K"] <- storm$CROPDMG[storm$CROPDMGEXP == "K"] * 1000
+storm$CROPDMG[storm$CROPDMGEXP == "m"] <- storm$CROPDMG[storm$CROPDMGEXP == "m"] * (10^6)
+storm$CROPDMG[storm$CROPDMGEXP == "B"] <- storm$CROPDMG[storm$CROPDMGEXP == "B"] * (10^9)
+storm$CROPDMG[storm$CROPDMGEXP == "k"] <- storm$CROPDMG[storm$CROPDMGEXP == "k"] * 1000
+storm$CROPDMG[storm$CROPDMGEXP == "0"] <- storm$CROPDMG[storm$CROPDMGEXP == "0"] * 1
+storm$CROPDMG[storm$CROPDMGEXP == "2"] <- storm$CROPDMG[storm$CROPDMGEXP == "2"] * 100
+storm$CROPDMG[storm$CROPDMGEXP == ""] <- storm$CROPDMG[storm$CROPDMGEXP == ""] * 1
+storm$CROPDMG[storm$CROPDMGEXP == "?"] <- 0
+head(storm[,c("EVTYPE","CROPDMG","CROPDMGEXP")])
+
+##aggregate the property damage by the event type and sort the output it in descending order
+prop <- aggregate(PROPDMG~EVTYPE,data=storm,FUN=sum,na.rm=TRUE)
+prop <- prop[with(prop,order(-PROPDMG)),]
+prop <- head(prop,10)
+print(prop)
+
+##aggregate the crop damage by the event type and sort the output it in descending order
+crop <- aggregate(CROPDMG~EVTYPE,data=storm,FUN=sum,na.rm=TRUE)
+crop <- crop[with(crop,order(-CROPDMG)),]
+crop <- head(crop,10)
+print(crop)
+
+par(mfrow=c(1,2),mar=c(5,3,3,2))
+barplot(prop$PROPDMG/(10^9),names.arg=prop$EVTYPE,las=2,col="brown",ylab="Prop damage(billions)",main="Harmful Events Vs Prop damages")
+barplot(crop$CROPDMG/(10^9),names.arg=crop$EVTYPE,las=2,col="brown",ylab="Crop damage(billions)",main="Harmful Events Vs Crop damages")
+
+```
+
+## Results
+Among the harmful events, Tornado has caused the most Fatalitties and Injuries.
+Among the harmful events, Flood has caused most of the property damages followed by Hurricane/Typhhon. Most Crop damage was caued by Drought followed by Flood.
+
+## Summary
+The data published by  U.S. National Oceanic and Atmospheric Administration's (NOAA) has been analyzed and most of harmful events causes fatalities, injuries and economic consequences has been analyzed.
+
